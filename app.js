@@ -43,11 +43,13 @@ function init(){
 
     reset();    
 
+    app.ticker.add(delta => update(delta));
+
 } init();
 
 
 function reset(){
-    speed = 1;
+    speed = 2;
 
     paddle.x = app.screen.width/2 - paddle.width/2; 
     paddle.y = app.screen.height - 20;
@@ -56,24 +58,21 @@ function reset(){
     ball.y = app.screen.height/3;
 
     let radians = randInt(0, 360) * Math.PI/180;
-    ballVelX = Math.cos(radians) * speed;
-    ballVelY = Math.sin(radians) * speed;
+    ballVelX = Math.cos(radians);
+    ballVelY = Math.sin(radians);
 
 }
 
 
-// update
-app.ticker.add((delta)=>{
-
-
+function update(delta){
     if(keys[39]) ++paddle.x;
     if(keys[37]) --paddle.x;
     if(keys[40]) ++paddle.y;
     if(keys[38]) --paddle.y;
 
 
-    ball.x += ballVelX * speed;
-    ball.y += ballVelY * speed;
+    ball.x += ballVelX * speed * delta;
+    ball.y += ballVelY * speed * delta;
 
     // breakout style ball-paddle collision
     if(ball.x + ballS > paddle.x &&
@@ -103,9 +102,8 @@ app.ticker.add((delta)=>{
     if(ball.y < 0) ballVelY *= -1;
     if(ball.y + ballS > app.screen.height) reset();
 
-    
+}
 
-})
 
 
 function randInt(min, max) { // min and max included 
