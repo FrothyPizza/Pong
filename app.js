@@ -1,28 +1,6 @@
 'use strict'
 
 
-// window auto resize code
-/*
-// Initialize a new pixi application
-const app = new PIXI.Application({
-    autoResize: true,
-    resolution: devicePixelRatio 
-});
-// Add the pixi view to the document
-document.body.appendChild(app.view);
-
-// Listen for window resize events
-window.addEventListener('resize', resize);
-
-// Resize window function
-function resize() {
-	// Resize the renderer
-    app.renderer.resize(window.innerWidth, window.innerHeight);
-  
-}resize();
-*/
-
-
 const app = new PIXI.Application({
     width: 256,
     height: 256,
@@ -52,27 +30,36 @@ let ballVelX, ballVelY;
 
 
 function init(){
-    speed = 1;
 
     paddle.beginFill(0xFFFFFF); // white
     paddle.drawRect(0, 0, 50, 5);
     app.stage.addChild(paddle);
-    paddle.x = app.screen.width/2; 
-    paddle.y = app.screen.height - 20;
 
 
     ball.beginFill(0xFFFFFF);
     ballS = 5;
     ball.drawRect(0, 0, ballS, ballS);
     app.stage.addChild(ball);
-    ball.x = app.screen.width/2;
-    ball.y = app.screen.height/2;
 
-    // start the ball in a random direction
+    reset();    
+
+} init();
+
+
+function reset(){
+    speed = 1;
+
+    paddle.x = app.screen.width/2 - paddle.width/2; 
+    paddle.y = app.screen.height - 20;
+
+    ball.x = app.screen.width/2;
+    ball.y = app.screen.height/3;
+
     let radians = randInt(0, 360) * Math.PI/180;
     ballVelX = Math.cos(radians) * speed;
     ballVelY = Math.sin(radians) * speed;
-} init();
+
+}
 
 
 // update
@@ -85,8 +72,8 @@ app.ticker.add((delta)=>{
     if(keys[38]) --paddle.y;
 
 
-    ball.x += ballVelX;
-    ball.y += ballVelY;
+    ball.x += ballVelX * speed;
+    ball.y += ballVelY * speed;
 
     // breakout style ball-paddle collision
     if(ball.x + ballS > paddle.x &&
@@ -106,13 +93,15 @@ app.ticker.add((delta)=>{
             // turn radians into a vector
             ballVelX = Math.cos(rad);
             ballVelY = Math.sin(rad);
+
+            speed += 0.1;
           
     }
     // bounce off walls
     if(ball.x < 0) ballVelX *= -1;
     if(ball.x + ballS > app.screen.width) ballVelX *= -1;
     if(ball.y < 0) ballVelY *= -1;
-    if(ball.y + ballS > app.screen.height) ballVelY *= -1;
+    if(ball.y + ballS > app.screen.height) reset();
 
     
 
