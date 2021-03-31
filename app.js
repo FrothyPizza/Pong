@@ -18,90 +18,166 @@ document.addEventListener('keyup', (event) => {
     keys[event.keyCode] = false;
 });
 
+const START_SPEED = 2;
+
+class Paddle{
+    height; 
+    width; 
+    x; 
+    y;
+    rect;
+    isBottom;
+
+    constructor(height, width, isBottom){
+        this.isBottom = isBottom;
+        this.height = height;
+        this.width = width;
+        this.x = app.screen.width/2 - this.width/2;
+        if(isBottom) this.y = app.screen.height - 20;
+        else this.y = 20;
+
+        this.rect = new PIXI.Graphics();
+        this.rect.beginFill(0xFFFFFF); // white
+        this.rect.drawRect(0, 0, width, height);
+        app.stage.addChild(this.rect);
+
+        this.reset();
+    }
+
+    reset(){
+        if(this.isBottom) this.y = app.screen.height - 20;
+        else this.y = 20;
+
+        this.rect.x = this.x;
+        this.rect.y = this.y;
+
+    }
+
+    move(dir){
+        this.x += dir;
+        this.rect.x = this.x;
+    }
+}
 
 
-let paddle = new PIXI.Graphics();
 
-let speed;
+class Ball{
+    ball;
+    size;
+    x;
+    y;
+    yVel;
+    xVel;
+    speed;
 
-let ballS;
-let ball = new PIXI.Graphics();
-let ballVelX, ballVelY;
+    constructor(speed, size=5){
+        this.x = app.screen.width/2;
+        this.y = app.screen.height/3;
 
+        this.xVel = 0;
+        this.yVel = 0;
+        
+        this.speed = speed;
+
+        this.ball = new PIXI.Graphics();
+
+        this.ball.beginFill(0xFFFFFF);
+        this.size = size;
+        this.ball.drawRect(0, 0, this.size, this.size);
+        app.stage.addChild(this.ball);
+
+
+        this.reset();
+    }
+
+    reset(){
+        this.x = app.screen.width/2;
+        this.y = app.screen.height/3;
+
+        let radians = randInt(0, 360) * Math.PI/180;
+        this.xVel = Math.cos(radians);
+        this.yVel = Math.sin(radians);
+
+        this.speed = START_SPEED;
+    }
+
+    update(delta, paddles){
+        // breakout style ball-paddle collision
+        for(let paddle of paddles) {
+            if(this.x + this.size > paddle.x &&
+                this.x < paddle.x + paddle.width &&
+                this.y + this.size > paddle.y &&
+                this.y < paddle.y + paddle.height){
+                    // find the position of the center of the ball
+                    let ballCenter = this.x + this.size/2;
+                    
+                    // find where the ball is relative to the paddle (should be between 0 and paddle width)
+                    let relativeToPaddle = paddle.x + paddle.width - ballCenter;
+                    // (1 - (relativeToPaddle/paddleW) * 180) generates a number between 0 and 180 based on where the ball is relative to the paddle
+                    let angle = 1 - ((relativeToPaddle/paddle.width) * 140 + 20);
+                    // convert the angle to radians
+                    let rad = angle * Math.PI/180;
+                    
+                    // turn radians into a vector
+                    this.xVel = Math.cos(rad);
+                    this.yVel = Math.sin(rad);
+                    if(!paddle.isBottom) this.yVel *= -1;
+
+                    this.speed += 0.1;
+                
+            }
+        }
+        // bounce off walls
+        if(this.x < 0) this.xVel *= -1;
+        if(this.x + this.size > app.screen.width) this.xVel *= -1;
+        if(this.y < 0) {    
+            for(let paddle of paddles) paddle.reset();
+            this.reset();
+        }
+        if(this.y + this.size > app.screen.height) {
+            for(let paddle of paddles) paddle.reset();
+            this.reset();
+        }
+
+        this.x += this.xVel * this.speed * delta;
+        this.y += this.yVel * this.speed * delta;
+
+        this.ball.x = this.x;
+        this.ball.y = this.y;   
+    }
+
+    
+
+
+}
+
+let bottomPaddle;
+let topPaddle;
+let ball;
 
 function init(){
-
-    paddle.beginFill(0xFFFFFF); // white
-    paddle.drawRect(0, 0, 50, 5);
-    app.stage.addChild(paddle);
-
-
-    ball.beginFill(0xFFFFFF);
-    ballS = 5;
-    ball.drawRect(0, 0, ballS, ballS);
-    app.stage.addChild(ball);
-
-    reset();    
+    bottomPaddle = new Paddle(5, 50, true);
+    topPaddle = new Paddle(5, 50, false);
+    ball = new Ball(1);
 
     app.ticker.add(delta => update(delta));
 
 } init();
 
 
-function reset(){
-    speed = 2;
-
-    paddle.x = app.screen.width/2 - paddle.width/2; 
-    paddle.y = app.screen.height - 20;
-
-    ball.x = app.screen.width/2;
-    ball.y = app.screen.height/3;
-
-    let radians = randInt(0, 360) * Math.PI/180;
-    ballVelX = Math.cos(radians);
-    ballVelY = Math.sin(radians);
-
-}
 
 
 function update(delta){
-    if(keys[39]) ++paddle.x;
-    if(keys[37]) --paddle.x;
-    if(keys[40]) ++paddle.y;
-    if(keys[38]) --paddle.y;
+    if(keys[39]) bottomPaddle.move(1);
+    if(keys[37]) bottomPaddle.move(-1);
+
+    if(keys[65]) topPaddle.move(-1);
+    if(keys[68]) topPaddle.move(1);
 
 
-    ball.x += ballVelX * speed * delta;
-    ball.y += ballVelY * speed * delta;
+    ball.update(delta, [bottomPaddle, topPaddle]);
 
-    // breakout style ball-paddle collision
-    if(ball.x + ballS > paddle.x &&
-        ball.x < paddle.x + paddle.width &&
-        ball.y + ballS > paddle.y &&
-        ball.y < paddle.y + paddle.height){
-            // find the position of the center of the ball
-            let ballCenter = ball.x + ballS/2;
-            
-            // find where the ball is relative to the paddle (should be between 0 and paddle width)
-            let relativeToPaddle = paddle.x + paddle.width - ballCenter;
-            // (1 - (relativeToPaddle/paddleW) * 180) generates a number between 0 and 180 based on where the ball is relative to the paddle
-            let angle = 1 - ((relativeToPaddle/paddle.width) * 140 + 20);
-            // convert the angle to radians
-            let rad = angle * Math.PI/180;
-            
-            // turn radians into a vector
-            ballVelX = Math.cos(rad);
-            ballVelY = Math.sin(rad);
-
-            speed += 0.1;
-          
-    }
-    // bounce off walls
-    if(ball.x < 0) ballVelX *= -1;
-    if(ball.x + ballS > app.screen.width) ballVelX *= -1;
-    if(ball.y < 0) ballVelY *= -1;
-    if(ball.y + ballS > app.screen.height) reset();
-
+    
 }
 
 
