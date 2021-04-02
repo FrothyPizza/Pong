@@ -27,8 +27,11 @@ class Paddle{
     y;
     rect;
     isBottom;
+    speed;
 
-    constructor(height, width, isBottom){
+    constructor(height, width, isBottom, speed=2){
+        this.speed = speed;
+
         this.isBottom = isBottom;
         this.height = height;
         this.width = width;
@@ -53,8 +56,8 @@ class Paddle{
 
     }
 
-    move(dir){
-        this.x += dir;
+    move(dir, delta){
+        this.x += dir * this.speed * delta;
         this.rect.x = this.x;
     }
 }
@@ -92,7 +95,7 @@ class Ball{
 
     reset(){
         this.x = app.screen.width/2;
-        this.y = app.screen.height/3;
+        this.y = app.screen.height/2;
 
         let radians = randInt(0, 360) * Math.PI/180;
         this.xVel = Math.cos(radians);
@@ -114,7 +117,8 @@ class Ball{
                     // find where the ball is relative to the paddle (should be between 0 and paddle width)
                     let relativeToPaddle = paddle.x + paddle.width - ballCenter;
                     // (1 - (relativeToPaddle/paddleW) * 180) generates a number between 0 and 180 based on where the ball is relative to the paddle
-                    let angle = 1 - ((relativeToPaddle/paddle.width) * 140 + 20);
+                    let maxAngle = 70; maxAngle *= 2;
+                    let angle = 1 - ((relativeToPaddle/paddle.width) * (maxAngle) + 180-maxAngle);
                     // convert the angle to radians
                     let rad = angle * Math.PI/180;
                     
@@ -168,11 +172,11 @@ function init(){
 
 
 function update(delta){
-    if(keys[39]) bottomPaddle.move(1);
-    if(keys[37]) bottomPaddle.move(-1);
+    if(keys[39]) bottomPaddle.move(1, delta);
+    if(keys[37]) bottomPaddle.move(-1, delta);
 
-    if(keys[65]) topPaddle.move(-1);
-    if(keys[68]) topPaddle.move(1);
+    if(keys[65]) topPaddle.move(-1, delta);
+    if(keys[68]) topPaddle.move(1, delta);
 
 
     ball.update(delta, [bottomPaddle, topPaddle]);
